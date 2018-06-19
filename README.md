@@ -6,9 +6,16 @@ Commands like `kubectl` allow you to export command completion logic for use in 
 
 # Installation
 
+**First, make sure you have `bash.exe` in your path or that you have Git for Windows installed.** If `bash.exe` isn't in the path, the version shipping with Git for Windows will be used.
+
+## From PowerShell Gallery
+
+`Install-Module -Name "PSBashCompletions"`
+
+## Manual Install
+
 1. Put the `PSBashCompletions` folder in your PowerShell module folder (e.g., `C:\Users\username\Documents\WindowsPowerShell\Modules`).
 2. `Import-Module PSBashCompletions`
-3. Make sure you have `bash.exe` in your path or that you have Git for Windows installed. If `bash.exe` isn't in the path, the version shipping with Git for Windows will be used.
 
 # Usage
 
