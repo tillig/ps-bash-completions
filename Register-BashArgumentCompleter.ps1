@@ -1,3 +1,23 @@
+<#
+.SYNOPSIS
+  Registers command line completions from bash into PowerShell.
+
+.DESCRIPTION
+  Registers a command line completion that runs in bash so it can be brought into PowerShell. This
+  is helpful for some commands like "kubectl" that have bash completions supported but where there
+  is no built-in support for PowerShell.
+
+  The command assumes you either have bash in your path or Git for Windows installed. If you don't
+  have bash in the path then the version packaged with Git for Windows will be used.
+
+.PARAMETER Command
+  The name of the command in bash that needs completions in PowerShell (e.g., kubectl). This is what
+  PowerShell will get completions on.
+
+.PARAMETER BashCompletions
+  The full path to the bash completion script that generates completions for the command. You can usually
+  download this or export it from the command itself.
+#>
 [CmdletBinding()]
 param(
   [Parameter(Mandatory=$True, Position=0)]
@@ -9,12 +29,7 @@ param(
   [ValidateScript({if(-Not($_ | Test-Path -PathType Leaf)){ throw "The completion file was not found." } return $true})]
   [ValidateNotNull()]
   [System.IO.FileInfo]
-  $BashCompletions,
-
-  [ValidateScript({if(-Not($_ | Test-Path -PathType Leaf)){ throw "The bridge script file was not found." } return $true})]
-  [ValidateNotNull()]
-  [System.IO.FileInfo]
-  $BridgeScript = "$PSScriptRoot\bash_completion_bridge.sh"
+  $BashCompletions
 )
 
 Write-Verbose "Starting command completion registration for $Command"
@@ -45,45 +60,27 @@ if($bash -eq $Null) {
   $bash = $bash.Source
 }
 
-Write-Verbose "bash: $bash"
+Write-Verbose "bash = $bash"
 
-$bashBridgeScript = [System.IO.Path]::GetFullPath($BridgeScript)
+$bashBridgeScript = [System.IO.Path]::GetFullPath("$PSScriptRoot\bash_completion_bridge.sh")
 Write-Verbose "Completion bridge = $bashBridgeScript"
+Write-Verbose "Completion command = &`"$bash`" `"$bashBridgeScript`" `"$bashCompletionScript`" `"<url-encoded-command-line>`""
 
 $block = {
   param($partialWordToComplete, $commandSoFar, $cursorPosition)
+
   Add-Type -Assembly System.Web
-  $val = "{ $partialWordToComplete / $commandSoFar / $cursorPosition }"
-
-  # Run bash to get the completion
-  $words = [System.Text.RegularExpressions.Regex]::Matches("$commandSoFar", "(?<=`")[^`"]*(?=`")|[^`" ]+")
-  if ($words.Count -lt 2) {
-    # We want the word _before_ this one. There is only one word.
-    $previousWord = ""
-  } else {
-    $previousWord = $words[$words.Count - 2].Value
-  }
-
-  # Pass the array as a colon-delimited URL-encoded string to ensure quoted items and spaces are properly passed.
-  # Colon will get encoded if it's part of the value so colon as delimiter is safe after encoding each item.
-  # @("`"a`"", "`"b`"", "`"c`"")
-  # becomes
-  # %22a%22:%22b%22:%22c%22
-  # and the bridge script can parse/decode that back into an array.
-  $COMP_WORDS = [String]::Join(':', ($words | %{[System.Web.HttpUtility]::UrlEncode($_).Replace('+','%20')}))
-  $COMP_LINE = $commandSoFar
-  $COMP_POINT = $cursorPosition
-
-  # TODO: Calculate COMP_CWORD (the index of the word in COMP_WORDS the current cursor is on)
-  #$result = (&"$bash" "$bashBridgeScript" "$bashCompletionScript" "$COMP_WORDS" "$COMP_LINE" "$COMP_POINT" "$partialWordToComplete" "$previousWord")
-  $result = "`"$bash`" `"$bashBridgeScript`" `"$bashCompletionScript`" `"$COMP_WORDS`" `"$COMP_LINE`" `"$COMP_POINT`" `"$partialWordToComplete`" `"$previousWord`""
+  $encodedCommand = [System.Web.HttpUtility]::UrlEncode($commandSoFar).Replace('+',"%20")
+  $result = (&"$bash" "$bashBridgeScript" "$bashCompletionScript" "$encodedCommand")
 
   # CompletionResult https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.completionresult.-ctor?view=powershellsdk-1.1.0#System_Management_Automation_CompletionResult__ctor_System_String_System_String_System_Management_Automation_CompletionResultType_System_String_
   # string - the text used as the auto completion result
   # string - the text to be displayed in a list
   # CompletionResultType https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.completionresulttype?view=powershellsdk-1.1.0
   # string the text for the tooltip with details
-  [System.Management.Automation.CompletionResult]::new($result, $result, 'Text', $result)
+  $result | ForEach-Object {
+    [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
+  }
 }.GetNewClosure()
 
 Register-ArgumentCompleter -Native -CommandName $Command -ScriptBlock $block
