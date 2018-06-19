@@ -102,3 +102,11 @@ if ($enableBashCompletions) {
   Register-BashArgumentCompleter git "$completionPath/git_completions.sh"
 }
 ```
+
+# Known Issues
+
+PowerShell doesn't appear to pass _flags_ to custom argument completers. So, say you tried to do this:
+
+`kubectl apply -<TAB>`
+
+Note the `TAB` after the dash `-`. In bash you'd get completions for the flag like `-f` or `--filename`. PowerShell doesn't seem to call a custom argument completer for flags. (If you know how to make that work [let me know!](https://github.com/tillig/ps-bash-completions/issues))
