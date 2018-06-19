@@ -100,12 +100,12 @@ function Register-BashArgumentCompleter {
 
   # Locate bash
   $bash = Get-Command bash -ErrorAction Ignore
-  if($bash -eq $Null) {
+  if($Null -eq $bash) {
     Write-Verbose "bash is not in the path."
 
     # Try for bash packaged with Git for Windows
     $git = Get-Command git -ErrorAction Ignore
-    if($git -eq $Null) {
+    if($Null -eq $git) {
       Write-Error "Unable to locate bash."
       Exit 1
     }
