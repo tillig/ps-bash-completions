@@ -89,13 +89,14 @@ function Register-BashArgumentCompleter {
 
     [Parameter(Mandatory=$True, Position=1)]
     [ValidateScript({if(-Not($_ | Test-Path -PathType Leaf)){ throw "The completion file was not found." } return $true})]
-    [ValidateNotNull()]
-    [System.IO.FileInfo]
+    [ValidateNotNullOrEmpty()]
+    [string]
     $BashCompletions
   )
 
   Write-Verbose "Starting command completion registration for $Command"
-  $bashCompletionScript = "/$([System.IO.Path]::GetFullPath($BashCompletions.FullName).Replace('\', '/').Replace(':', ''))"
+  $bashCompletionScript = (Resolve-Path -Path $BashCompletions).Path
+  $bashCompletionScript = "/$($bashCompletionScript.Replace('\', '/').Replace(':', ''))"
   Write-Verbose "Bash completions for $Command = $bashCompletionScript"
 
   # Locate bash
