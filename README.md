@@ -6,17 +6,18 @@ Commands like `kubectl` allow you to export command completion logic for use in 
 
 # Installation
 
-1. Put the `Register-BashArgumentCompleter.ps1`, `bash_completion.sh`, and `bash_completion_bridge.sh` files in the same folder.
-2. Make sure you have `bash.exe` in your path or that you have Git for Windows installed. If `bash.exe` isn't in the path, the version shipping with Git for Windows will be used.
+1. Put the `PSBashCompletions` folder in your PowerShell module folder (e.g., `C:\Users\username\Documents\WindowsPowerShell\Modules`).
+2. `Import-Module PSBashCompletions`
+3. Make sure you have `bash.exe` in your path or that you have Git for Windows installed. If `bash.exe` isn't in the path, the version shipping with Git for Windows will be used.
 
 # Usage
 
 1. Locate the completion script for the bash command. You may have to export this like `kubectl completion bash > kubectl_completions.sh`
-2. Run the `Register-BashArgumentCompleter.ps1` script to register the command you're expanding and the location of the completions.
+2. Run the `Register-BashArgumentCompleter` cmdlet to register the command you're expanding and the location of the completions.
 
 Example:
 
-`.\Register-BashArgumentCompleter.ps1 "kubectl" C:\completions\kubectl_completions.sh`
+`Register-BashArgumentCompleter "kubectl" C:\completions\kubectl_completions.sh`
 
 # How It Works
 
@@ -29,9 +30,9 @@ The idea is to register a PowerShell argument completer that will manually invok
 
 It won't be quite as fast as if it was all running native but it means you can use provided bash completions instead of having to re-implement in PowerShell.
 
-# Test Expansions
+# Demo Expansions
 
-In the `test` folder there are some expansions to try:
+In the `Demo` folder there are some expansions to try:
 
 - `Test-KubectlRegistration.ps1` - Expansions for `kubectl`
 - `Test-EchoRegistration.ps1` - Simple echo script that shows completion parameters in bash; use `echotest` as the command to complete and whatever else after it to simulate command lines.
