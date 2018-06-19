@@ -34,8 +34,9 @@ It won't be quite as fast as if it was all running native but it means you can u
 
 In the `Demo` folder there are some expansions to try:
 
-- `Test-KubectlRegistration.ps1` - Expansions for `kubectl`
-- `Test-EchoRegistration.ps1` - Simple echo script that shows completion parameters in bash; use `echotest` as the command to complete and whatever else after it to simulate command lines.
+- `Register-KubectlCompleter.ps1` - Expansions for `kubectl`
+- `Register-GitCompleter.ps1` - Expansions for `git`
+- `Register-EchoTestCompleter.ps1` - Simple echo script that shows completion parameters in bash; use `echotest` as the command to complete and whatever else after it to simulate command lines.
 
 # Troubleshooting
 
