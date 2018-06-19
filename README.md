@@ -83,3 +83,22 @@ Common things that can go wrong:
 - You have something in your bash profile that's interfering with the completions.
 - You're trying to use a completion that isn't compatible with the Windows version of the command. This happens with `git` completions - you need to use the completion script that comes with Git for Windows, not the Linux version.
 - The completions rely on other commands or functions that aren't available/loaded. If the completion script isn't self-contained, things won't work. For example, the `kubectl` completions actually call `kubectl` to get resource names in some completions. If bash can't find `kubectl`, the completion won't work.
+
+# Add to Your Profile
+
+After installing the module you can set the completions to be part of your profile. One way to do that:
+
+- Create a folder for completions in your PowerShell profile folder, like: `C:\Users\tillig\OneDrive\Documents\WindowsPowerShell\bash-completion`
+- Save all of your completions in there (e.g., `kubectl_completions.sh`).
+- Add a script block to your `Microsoft.PowerShell_profile.ps1` that looks for `bash` (or Git for Windows) and conditionally registers completions based on that. (This will avoid errors if you sync your PowerShell profile to machines that might not have bash.)
+
+```powershell
+$enableBashCompletions = ($Null -ne (Get-Command bash -ErrorAction Ignore)) -or ($Null -ne (Get-Command git -ErrorAction Ignore))
+
+if ($enableBashCompletions) {
+  Import-Module PSBashCompletions
+  $completionPath = [System.IO.Path]::Combine([System.IO.Path]::GetDirectoryName($profile), "bash-completion")
+  Register-BashArgumentCompleter kubectl "$completionPath/kubectl_completions.sh"
+  Register-BashArgumentCompleter git "$completionPath/git_completions.sh"
+}
+```
