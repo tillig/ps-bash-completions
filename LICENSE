@@ -1,0 +1,44 @@
+The bash argument completer module for PowerShell is distributed under the
+MIT license.
+
+MIT License
+
+Copyright (c) 2018 Travis Illig
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+-----
+
+The bash_completion.sh shell script is distributed under GPLv2. Original
+source is accessible at https://github.com/scop/bash-completion
+
+The Git for Windows completions used for testing/demo purposes are distributed
+under GPLv2. Original source is accessible at
+https://github.com/git-for-windows/git/blob/a8c25e7a41a79e2c2469f914383c922d1134a5ae/contrib/completion/git-completion.bash
+
+You may obtain a copy of the License at
+https://www.gnu.org/licenses/gpl.txt
+
+-----
+
+The kubectl completions used for testing/demo purposes are distributed under
+Apache 2.0.
+
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
