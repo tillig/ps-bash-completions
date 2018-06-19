@@ -36,3 +36,41 @@ In the `Demo` folder there are some expansions to try:
 
 - `Test-KubectlRegistration.ps1` - Expansions for `kubectl`
 - `Test-EchoRegistration.ps1` - Simple echo script that shows completion parameters in bash; use `echotest` as the command to complete and whatever else after it to simulate command lines.
+
+# Troubleshooting
+
+There are lots of moving pieces, so if things aren't working there isn't "one answer" as to why.
+
+**First, run `Register-BashArgumentCompleter` with the `-Verbose` flag.** When you do that, you'll get a verbose line that shows the actual `bash.exe` command that will be used to generate completions. You can copy that and run it yourself to see what happens.
+
+The command will look something like this:
+
+`&"C:\Program Files\Git\bin\bash.exe" "C:\Users\username\Documents\WindowsPowerShell\Modules\PSBashCompletions\1.0.0\bash_completion_bridge.sh" "/C/completions/kubectl_completions.sh" "<url-encoded-command-line>"`
+
+The last parameter is what you can play with - it's a URL-encoded version of the whole command line being completed (with `%20` as space, not `+`).
+
+Say you're testing `kubectl` completions and want to see what would happen if you hit TAB after `kubectl c`. You'd run:
+
+`&"C:\Program Files\Git\bin\bash.exe" "C:\Users\username\Documents\WindowsPowerShell\Modules\PSBashCompletions\1.0.0\bash_completion_bridge.sh" "/C/completions/kubectl_completions.sh" "kubectl%20c"`
+
+If it works, you'd see a list like:
+
+```
+certificate
+cluster-info
+completion
+config
+convert
+cordon
+cp
+create
+```
+
+**If it generates an error, that's the error to troubleshoot.**
+
+Common things that can go wrong:
+
+- Bash isn't found or the path to bash is wrong.
+- Your completion script isn't found or the path is wrong.
+- You have something in your bash profile that's interfering with the completions.
+- The completions rely on other commands or functions that aren't available/loaded. If the completion script isn't self-contained, things won't work. For example, the `kubectl` completions actually call `kubectl` to get resource names in some completions. If bash can't find `kubectl`, the completion won't work.
