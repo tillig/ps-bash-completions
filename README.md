@@ -26,6 +26,8 @@ Example:
 
 `Register-BashArgumentCompleter "kubectl" C:\completions\kubectl_completions.sh`
 
+**Make sure the completion file is UTF-8 or ASCII.** Some exports (like `kubectl`) come out as UTF-16. Windows `bash` may see this as a binary file that can't be interpreted which results in no completions happening.
+
 # How It Works
 
 The idea is to register a PowerShell argument completer that will manually invoke the bash completion mechanism and return the output that bash would have provided. Basically, that means:
@@ -80,6 +82,7 @@ Common things that can go wrong:
 
 - Bash isn't found or the path to bash is wrong.
 - Your completion script isn't found or the path is wrong.
+- Your completion script isn't UTF-8 or ASCII. UTF-16 doesn't get read as text by Windows `bash`.
 - You have something in your bash profile that's interfering with the completions.
 - You're trying to use a completion that isn't compatible with the Windows version of the command. This happens with `git` completions - you need to use the completion script that comes with Git for Windows, not the Linux version.
 - The completions rely on other commands or functions that aren't available/loaded. If the completion script isn't self-contained, things won't work. For example, the `kubectl` completions actually call `kubectl` to get resource names in some completions. If bash can't find `kubectl`, the completion won't work.
