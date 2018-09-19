@@ -44,13 +44,13 @@
 
   This will output something like the following:
 
-  VERBOSE: Starting command completion registration for kubectl
-  VERBOSE: Bash completions for kubectl = /C/completions/kubectl_completions.sh
   VERBOSE: bash is not in the path.
   VERBOSE: Found bash packaged with git.
   VERBOSE: bash = C:\Program Files\Git\bin\bash.exe
-  VERBOSE: Completion bridge = C:\Users\username\Documents\WindowsPowerShell\Modules\PSBashCompletions\1.0.0\bash_completion_bridge.sh
-  VERBOSE: Completion command = &"C:\Program Files\Git\bin\bash.exe" "C:\Users\username\Documents\WindowsPowerShell\Modules\PSBashCompletions\1.0.0\bash_completion_bridge.sh" "/C/completions/kubectl_completions.sh" "<url-encoded-command-line>"
+  VERBOSE: Starting command completion registration for kubectl
+  VERBOSE: Completion bridge = /c/Users/username/Documents/WindowsPowerShell/Modules/PSBashCompletions/1.0.0/bash_completion_bridge.sh
+  VERBOSE: Bash completions for kubectl = /c/completions/kubectl_completions.sh
+  VERBOSE: Completion command = &"C:\Program Files\Git\bin\bash.exe" "/c/Users/username/Documents/WindowsPowerShell/Modules/PSBashCompletions/1.0.0/bash_completion_bridge.sh" "/c/completions/kubectl_completions.sh" "<url-encoded-command-line>"
 
   The last line, the completion command, is the interesting bit.
 
@@ -64,7 +64,7 @@
 
   Now run the completion command with your completion line:
 
-  &"C:\Program Files\Git\bin\bash.exe" "C:\Users\username\Documents\WindowsPowerShell\Modules\PSBashCompletions\1.0.0\bash_completion_bridge.sh" "/C/completions/kubectl_completions.sh" "kubectl%20c"
+  &"C:\Program Files\Git\bin\bash.exe" "/c/Users/username/Documents/WindowsPowerShell/Modules/PSBashCompletions/1.0.0/bash_completion_bridge.sh" "/c/completions/kubectl_completions.sh" "kubectl%20c"
 
   This should generate the list of completions, like:
 
@@ -94,11 +94,6 @@ function Register-BashArgumentCompleter {
     $BashCompletions
   )
 
-  Write-Verbose "Starting command completion registration for $Command"
-  $bashCompletionScript = (Resolve-Path -Path $BashCompletions).Path
-  $bashCompletionScript = "/$($bashCompletionScript.Replace('\', '/').Replace(':', ''))"
-  Write-Verbose "Bash completions for $Command = $bashCompletionScript"
-
   # Locate bash
   $bash = Get-Command bash -ErrorAction Ignore
   if($Null -eq $bash) {
@@ -125,8 +120,24 @@ function Register-BashArgumentCompleter {
 
   Write-Verbose "bash = $bash"
 
-  $bashBridgeScript = [System.IO.Path]::GetFullPath("$PSScriptRoot\bash_completion_bridge.sh")
+  # Determine drive letter mount point
+  # this assumes you have a drive C and looks for either /mnt/c or just /c to find where it is mounted in bash
+  # the resulting string should be either / or /mnt/
+  $mountPath = (&"$bash" -c "mount | grep ^C:\ | cut -f3 -d\ ") -replace "/c","/"
+
+  Write-Verbose "Starting command completion registration for $Command"
+  $bashBridgeScriptPath = Resolve-Path -Path "$PSScriptRoot\bash_completion_bridge.sh"
+  $driveLetter = $bashBridgeScriptPath.Drive.Name.ToLowerInvariant()
+  $driveLetterMountPoint = "$mountPath$driveLetter"
+  $bashBridgeScript = $bashBridgeScriptPath.Path -Replace '^([A-Z]:)',$driveLetterMountPoint -Replace '\\','/'
   Write-Verbose "Completion bridge = $bashBridgeScript"
+
+  $bashCompletionScriptPath = Resolve-Path -Path $BashCompletions
+  $driveLetter = $bashCompletionScriptPath.Drive.Name.ToLowerInvariant()
+  $driveLetterMountPoint = "$mountPath$driveLetter"
+  $bashCompletionScript = $bashCompletionScriptPath.Path -Replace '^([A-Z]:)',$driveLetterMountPoint -Replace '\\', '/'
+  Write-Verbose "Bash completions for $Command = $bashCompletionScript"
+
   Write-Verbose "Completion command = &`"$bash`" `"$bashBridgeScript`" `"$bashCompletionScript`" `"<url-encoded-command-line>`""
 
   $block = {
