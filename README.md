@@ -91,7 +91,7 @@ Common things that can go wrong:
 
 After installing the module you can set the completions to be part of your profile. One way to do that:
 
-- Create a folder for completions in your PowerShell profile folder, like: `C:\Users\tillig\OneDrive\Documents\WindowsPowerShell\bash-completion`
+- Create a folder for completions in your PowerShell profile folder, like: `C:\Users\username\OneDrive\Documents\WindowsPowerShell\bash-completion`
 - Save all of your completions in there (e.g., `kubectl_completions.sh`).
 - Add a script block to your `Microsoft.PowerShell_profile.ps1` that looks for `bash` (or Git for Windows) and conditionally registers completions based on that. (This will avoid errors if you sync your PowerShell profile to machines that might not have bash.)
 
