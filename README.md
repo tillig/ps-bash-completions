@@ -55,13 +55,13 @@ There are lots of moving pieces, so if things aren't working there isn't "one an
 
 The command will look something like this:
 
-`&"C:\Program Files\Git\bin\bash.exe" "C:\Users\username\Documents\WindowsPowerShell\Modules\PSBashCompletions\1.0.0\bash_completion_bridge.sh" "/C/completions/kubectl_completions.sh" "<url-encoded-command-line>"`
+`&"C:\Program Files\Git\bin\bash.exe" "/c/Users/username/Documents/WindowsPowerShell/Modules/PSBashCompletions/1.0.0/bash_completion_bridge.sh" "/c/completions/kubectl_completions.sh" "<url-encoded-command-line>"`
 
 The last parameter is what you can play with - it's a URL-encoded version of the whole command line being completed (with `%20` as space, not `+`).
 
 Say you're testing `kubectl` completions and want to see what would happen if you hit TAB after `kubectl c`. You'd run:
 
-`&"C:\Program Files\Git\bin\bash.exe" "C:\Users\username\Documents\WindowsPowerShell\Modules\PSBashCompletions\1.0.0\bash_completion_bridge.sh" "/C/completions/kubectl_completions.sh" "kubectl%20c"`
+`&"C:\Program Files\Git\bin\bash.exe" "/c/Users/username/Documents/WindowsPowerShell/Modules/PSBashCompletions/1.0.0/bash_completion_bridge.sh" "/c/completions/kubectl_completions.sh" "kubectl%20c"`
 
 If it works, you'd see a list like:
 
