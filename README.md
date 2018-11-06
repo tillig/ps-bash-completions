@@ -19,14 +19,17 @@ Commands like `kubectl` allow you to export command completion logic for use in 
 
 # Usage
 
-1. Locate the completion script for the bash command. You may have to export this like `kubectl completion bash > kubectl_completions.sh`
+1. Locate the completion script for the bash command. You may have to export this like:
+    ```PowerShell
+    ((kubectl completion bash) -join "`n") | Set-Content -Encoding ASCII -NoNewline -Path kubectl_completions.sh
+    ```
+    **Make sure the completion file is ASCII.** Some exports (like `kubectl`) come out as UTF-16 with CRLF line endings. Windows `bash` may see this as a binary file that can't be interpreted which results in no completions happening.  Using `join` and `Set-Content`  ensures the completions script will load in bash.
+
 2. Run the `Register-BashArgumentCompleter` cmdlet to register the command you're expanding and the location of the completions.
-
-Example:
-
-`Register-BashArgumentCompleter "kubectl" C:\completions\kubectl_completions.sh`
-
-**Make sure the completion file is UTF-8 or ASCII.** Some exports (like `kubectl`) come out as UTF-16. Windows `bash` may see this as a binary file that can't be interpreted which results in no completions happening.
+    Example:
+    ```PowerShell
+    Register-BashArgumentCompleter "kubectl" C:\completions\kubectl_completions.sh`
+    ```
 
 # How It Works
 
