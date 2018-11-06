@@ -85,7 +85,7 @@ Common things that can go wrong:
 
 - Bash isn't found or the path to bash is wrong.
 - Your completion script isn't found or the path is wrong.
-- Your completion script isn't UTF-8 or ASCII. UTF-16 doesn't get read as text by Windows `bash`.
+- Your completion script isn't ASCII with `\n` line endings. UTF-16 doesn't get read as text by Windows `bash`; UTF-8 with a byte-order mark also sometimes causes problems. Even Windows `\r\n` line endings may cause trouble with parsing sometimes. Keeping it ASCII and `\n` is the safest way to ensure compatibility.
 - You have something in your bash profile that's interfering with the completions.
 - You're trying to use a completion that isn't compatible with the Windows version of the command. This happens with `git` completions - you need to use the completion script that comes with Git for Windows, not the Linux version.
 - The completions rely on other commands or functions that aren't available/loaded. If the completion script isn't self-contained, things won't work. For example, the `kubectl` completions actually call `kubectl` to get resource names in some completions. If bash can't find `kubectl`, the completion won't work.
