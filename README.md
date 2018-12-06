@@ -111,8 +111,22 @@ if ($enableBashCompletions) {
 
 # Known Issues
 
+## Flags Don't Autocomplete
 PowerShell doesn't appear to pass _flags_ to custom argument completers. So, say you tried to do this:
 
 `kubectl apply -<TAB>`
 
 Note the `TAB` after the dash `-`. In bash you'd get completions for the flag like `-f` or `--filename`. PowerShell doesn't seem to call a custom argument completer for flags. (If you know how to make that work [let me know!](https://github.com/tillig/ps-bash-completions/issues))
+
+## Recursive Command Calls Don't Work
+Some completions (like `kubectl`) actually call themselves to generate completions. For example, if you do:
+
+`kubectl get pod -n <TAB>`
+
+...then `kubectl` will actually be called to go get the list of your namespaces to try to autocomplete the remote values for you. In cases like this, you may see that PowerShell will instead do something weird like duplicate the flag...
+
+`kubectl get pod -n -n`
+
+...or it may do nothing at all. If you run the troubleshooting command line, you may see an error message, possibly something cryptic like `compopt: not currently executing completion function`.
+
+This happens because we're not _actually in bash doing the completion_, we're manually invoking the completion and the fake-out isn't deep enough. I don't know how to fix that, since `kubectl` or whatever might not actually be installed in bash for you - it may be a Windows/PowerShell thing. Even if it was, getting all the levels working is beyond my ken. (If you know how to make that work [let me know!](https://github.com/tillig/ps-bash-completions/issues))
