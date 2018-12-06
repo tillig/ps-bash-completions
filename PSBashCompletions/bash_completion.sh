@@ -553,12 +553,11 @@ _filedir()
     _tilde "$cur" || return
 
     local -a toks
-    local x tmp
+    local x reset
 
-    x=$( compgen -d -- "$cur" ) &&
-    while read -r tmp; do
-        toks+=( "$tmp" )
-    done <<< "$x"
+    reset=$(shopt -po noglob); set -o noglob
+    toks=( $( compgen -d -- "$cur" ) )
+    IFS=' '; $reset; IFS=$'\n'
 
     if [[ "$1" != -d ]]; then
         local quoted
@@ -567,17 +566,16 @@ _filedir()
         # Munge xspec to contain uppercase version too
         # http://thread.gmane.org/gmane.comp.shells.bash.bugs/15294/focus=15306
         local xspec=${1:+"!*.@($1|${1^^})"}
-        x=$( compgen -f -X "$xspec" -- $quoted ) &&
-        while read -r tmp; do
-            toks+=( "$tmp" )
-        done <<< "$x"
+        reset=$(shopt -po noglob); set -o noglob
+        toks+=( $( compgen -f -X "$xspec" -- $quoted ) )
+        IFS=' '; $reset; IFS=$'\n'
 
         # Try without filter if it failed to produce anything and configured to
-        [[ -n ${COMP_FILEDIR_FALLBACK:-} && -n "$1" && ${#toks[@]} -lt 1 ]] && \
-            x=$( compgen -f -- $quoted ) &&
-            while read -r tmp; do
-                toks+=( "$tmp" )
-            done <<< "$x"
+        [[ -n ${COMP_FILEDIR_FALLBACK:-} && -n "$1" && ${#toks[@]} -lt 1 ]] && {
+            reset=$(shopt -po noglob); set -o noglob
+            toks+=( $( compgen -f -- $quoted ) )
+            IFS=' '; $reset; IFS=$'\n'
+        }
     fi
 
     if [[ ${#toks[@]} -ne 0 ]]; then
@@ -914,15 +912,23 @@ _configured_interfaces()
 }
 
 # Local IP addresses.
+# -4: IPv4 addresses only (default)
+# -6: IPv6 addresses only
+# -a: All addresses
 #
 _ip_addresses()
 {
+    local n
+    case $1 in
+        -a) n='6\?' ;;
+        -6) n='6' ;;
+    esac
     local PATH=$PATH:/sbin
-    COMPREPLY+=( $( compgen -W \
-        "$( { LC_ALL=C ifconfig -a || ip addr show; } 2>/dev/null | command sed -ne \
+    local addrs=$( { LC_ALL=C ifconfig -a || ip addr show; } 2>/dev/null |
+        command sed -ne \
             's/.*addr:\([^[:space:]]*\).*/\1/p' -ne \
-            's|.*inet[[:space:]]\{1,\}\([^[:space:]/]*\).*|\1|p' )" \
-        -- "$cur" ) )
+            "s|.*inet$n[[:space:]]\{1,\}\([^[:space:]/]*\).*|\1|p" )
+    COMPREPLY+=( $( compgen -W "$addrs" -- "$cur" ) )
 }
 
 # This function completes on available kernels
@@ -1139,7 +1145,8 @@ _services()
         $( printf '%s\n' ${sysvdirs[0]}/!($_backup_glob|functions|README) ) )
     $reset
 
-    COMPREPLY+=( $( systemctl list-units --full --all 2>/dev/null | \
+    COMPREPLY+=( $( { systemctl list-units --full --all || \
+                      systemctl list-unit-files; } 2>/dev/null | \
         awk '$1 ~ /\.service$/ { sub("\\.service$", "", $1); print $1 }' ) )
 
     if [[ -x /sbin/upstart-udev-bridge ]]; then
@@ -1348,14 +1355,17 @@ _get_first_arg()
 # This function counts the number of args, excluding options
 # @param $1 chars  Characters out of $COMP_WORDBREAKS which should
 #     NOT be considered word breaks. See __reassemble_comp_words_by_ref.
+# @param $2 glob   Options whose following argument should not be counted
 _count_args()
 {
     local i cword words
     __reassemble_comp_words_by_ref "$1" words cword
 
     args=1
-    for i in "${words[@]:1:cword-1}"; do
-        [[ "$i" != -* ]] && args=$(($args+1))
+    for (( i=1; i < cword; i++ )); do
+        if [[ ${words[i]} != -* && ${words[i-1]} != $2 ]]; then
+           args=$(($args+1))
+        fi
     done
 }
 
@@ -1482,9 +1492,9 @@ _included_ssh_config_files()
 # Return: Completions, starting with CWORD, are added to COMPREPLY[]
 _known_hosts_real()
 {
-    local configfile flag prefix
-    local cur curd awkcur user suffix aliases i host ipv4 ipv6
-    local -a kh khd config
+    local configfile flag prefix OIFS=$IFS
+    local cur user suffix aliases i host ipv4 ipv6
+    local -a kh tmpkh khd config
 
     # TODO remove trailing %foo from entries
 
@@ -1523,8 +1533,7 @@ _known_hosts_real()
 
     # Known hosts files from configs
     if [[ ${#config[@]} -gt 0 ]]; then
-        local OIFS=$IFS IFS=$'\n' j
-        local -a tmpkh
+        local IFS=$'\n' j
         # expand paths (if present) to global and user known hosts files
         # TODO(?): try to make known hosts files with more than one consecutive
         #          spaces in their name work (watch out for ~ expansion
@@ -1561,35 +1570,31 @@ _known_hosts_real()
 
     # If we have known_hosts files to use
     if [[ ${#kh[@]} -gt 0 || ${#khd[@]} -gt 0 ]]; then
-        # Escape slashes and dots in paths for awk
-        awkcur=${cur//\//\\\/}
-        awkcur=${awkcur//\./\\\.}
-        curd=$awkcur
-
-        if [[ "$awkcur" == [0-9]*[.:]* ]]; then
-            # Digits followed by a dot or a colon - just search for that
-            awkcur="^$awkcur[.:]*"
-        elif [[ "$awkcur" == [0-9]* ]]; then
-            # Digits followed by no dot or colon - search for digits followed
-            # by a dot or a colon
-            awkcur="^$awkcur.*[.:]"
-        elif [[ -z $awkcur ]]; then
-            # A blank - search for a dot, a colon, or an alpha character
-            awkcur="[a-z.:]"
-        else
-            awkcur="^$awkcur"
-        fi
-
         if [[ ${#kh[@]} -gt 0 ]]; then
-            # FS needs to look for a comma separated list
-            COMPREPLY+=( $( awk 'BEGIN {FS=","}
-            /^\s*[^|\#]/ {
-            sub("^@[^ ]+ +", ""); \
-            sub(" .*$", ""); \
-            for (i=1; i<=NF; ++i) { \
-            sub("^\\[", "", $i); sub("\\](:[0-9]+)?$", "", $i); \
-            if ($i !~ /[*?]/ && $i ~ /'"$awkcur"'/) {print $i} \
-            }}' "${kh[@]}" 2>/dev/null ) )
+            # https://man.openbsd.org/sshd.8#SSH_KNOWN_HOSTS_FILE_FORMAT
+            for i in "${kh[@]}"; do
+                while read -ra tmpkh; do
+                    set -- "${tmpkh[@]}"
+                    # Skip entries starting with | (hashed) and # (comment)
+                    [[ $1 == [\|\#]* ]] && continue
+                    # Ignore leading @foo (markers)
+                    [[ $1 == @* ]] && shift
+                    # Split entry on commas
+                    local IFS=,
+                    for host in $1; do
+                        # Skip hosts containing wildcards
+                        [[ $host == *[*?]* ]] && continue
+                        # Remove leading [
+                        host="${host#[}"
+                        # Remove trailing ] + optional :port
+                        host="${host%]?(:+([0-9]))}"
+                        # Add host to candidates
+                        COMPREPLY+=( $host )
+                    done
+                    IFS=$OIFS
+                done < "$i"
+            done
+            COMPREPLY=( $( compgen -W '${COMPREPLY[@]}' -- "$cur" ) )
         fi
         if [[ ${#khd[@]} -gt 0 ]]; then
             # Needs to look for files called
@@ -1597,7 +1602,7 @@ _known_hosts_real()
             # dont fork any processes, because in a cluster environment,
             # there can be hundreds of hostkeys
             for i in "${khd[@]}" ; do
-                if [[ "$i" == *key_22_$curd*.pub && -r "$i" ]]; then
+                if [[ "$i" == *key_22_$cur*.pub && -r "$i" ]]; then
                     host=${i/#*key_22_/}
                     host=${host/%.pub/}
                     COMPREPLY+=( $host )
@@ -1658,7 +1663,7 @@ _known_hosts_real()
     __ltrim_colon_completions "$prefix$user$cur"
 
 } # _known_hosts_real()
-complete -F _known_hosts traceroute traceroute6 tracepath tracepath6 \
+complete -F _known_hosts traceroute traceroute6 \
     fping fping6 telnet rsh rlogin ftp dig mtr ssh-installkeys showmount
 
 # This meta-cd function observes the CDPATH variable, so that cd additionally
@@ -1890,7 +1895,13 @@ complete -F _longopt a2ps awk base64 bash bc bison cat chroot colordiff cp \
     sed seq sha{,1,224,256,384,512}sum shar sort split strip sum tac tail tee \
     texindex touch tr uname unexpand uniq units vdir wc who
 
-declare -A _xspecs
+# declare only knows -g in bash >= 4.2.
+if [[ ${BASH_VERSINFO[0]} -gt 4 ||
+      ${BASH_VERSINFO[0]} -eq 4 && ${BASH_VERSINFO[1]} -ge 2 ]]; then
+    declare -Ag _xspecs
+else
+    declare -A _xspecs
+fi
 _filedir_xspec()
 {
     local cur prev words cword
@@ -1927,6 +1938,13 @@ _filedir_xspec()
         }
         ))
 
+    # Try without filter if it failed to produce anything and configured to
+    [[ -n ${COMP_FILEDIR_FALLBACK:-} && ${#toks[@]} -lt 1 ]] && {
+        local reset=$(shopt -po noglob); set -o noglob
+        toks+=( $( compgen -f -- "$(quote_readline "$cur")" ) )
+        IFS=' '; $reset; IFS=$'\n'
+    }
+
     if [[ ${#toks[@]} -ne 0 ]]; then
         compopt -o filenames
         COMPREPLY=( "${toks[@]}" )
@@ -1943,7 +1961,7 @@ _install_xspec()
 }
 # bzcmp, bzdiff, bz*grep, bzless, bzmore intentionally not here, see Debian: #455510
 _install_xspec '!*.?(t)bz?(2)' bunzip2 bzcat pbunzip2 pbzcat lbunzip2 lbzcat
-_install_xspec '!*.@(zip|[egjsw]ar|exe|pk3|wsz|zargo|xpi|s[tx][cdiw]|sx[gm]|o[dt][tspgfc]|od[bm]|oxt|epub|apk|ipa|do[ct][xm]|p[op]t[mx]|xl[st][xm]|pyz)' unzip zipinfo
+_install_xspec '!*.@(zip|[egjswx]ar|exe|pk3|wsz|zargo|xpi|s[tx][cdiw]|sx[gm]|o[dt][tspgfc]|od[bm]|oxt|epub|apk|ipa|do[ct][xm]|p[op]t[mx]|xl[st][xm]|pyz|whl)' unzip zipinfo
 _install_xspec '*.Z' compress znew
 # zcmp, zdiff, z*grep, zless, zmore intentionally not here, see Debian: #455510
 _install_xspec '!*.@(Z|[gGd]z|t[ag]z)' gunzip zcat
@@ -1961,15 +1979,15 @@ _install_xspec '!*.@(dvi|DVI)?(.@(gz|Z|bz2))' xdvi kdvi
 _install_xspec '!*.dvi' dvips dviselect dvitype dvipdf advi dvipdfm dvipdfmx
 _install_xspec '!*.[pf]df' acroread gpdf xpdf
 _install_xspec '!*.@(?(e)ps|pdf)' kpdf
-_install_xspec '!*.@(okular|@(?(e|x)ps|?(E|X)PS|[pf]df|[PF]DF|dvi|DVI|cb[rz]|CB[RZ]|djv?(u)|DJV?(U)|dvi|DVI|gif|jp?(e)g|miff|tif?(f)|pn[gm]|p[bgp]m|bmp|xpm|ico|xwd|tga|pcx|GIF|JP?(E)G|MIFF|TIF?(F)|PN[GM]|P[BGP]M|BMP|XPM|ICO|XWD|TGA|PCX|epub|EPUB|odt|ODT|fb?(2)|FB?(2)|mobi|MOBI|g3|G3|chm|CHM)?(.?(gz|GZ|bz2|BZ2)))' okular
+_install_xspec '!*.@(okular|@(?(e|x)ps|?(E|X)PS|[pf]df|[PF]DF|dvi|DVI|cb[rz]|CB[RZ]|djv?(u)|DJV?(U)|dvi|DVI|gif|jp?(e)g|miff|tif?(f)|pn[gm]|p[bgp]m|bmp|xpm|ico|xwd|tga|pcx|GIF|JP?(E)G|MIFF|TIF?(F)|PN[GM]|P[BGP]M|BMP|XPM|ICO|XWD|TGA|PCX|epub|EPUB|odt|ODT|fb?(2)|FB?(2)|mobi|MOBI|g3|G3|chm|CHM)?(.?(gz|GZ|bz2|BZ2|xz|XZ)))' okular
 _install_xspec '!*.pdf' epdfview pdfunite
 _install_xspec '!*.@(cb[rz7t]|djv?(u)|?(e)ps|pdf)' zathura
 _install_xspec '!*.@(?(e)ps|pdf)' ps2pdf ps2pdf12 ps2pdf13 ps2pdf14 ps2pdfwr
 _install_xspec '!*.texi*' makeinfo texi2html
 _install_xspec '!*.@(?(la)tex|texi|dtx|ins|ltx|dbj)' tex latex slitex jadetex pdfjadetex pdftex pdflatex texi2dvi xetex xelatex luatex lualatex
 _install_xspec '!*.mp3' mpg123 mpg321 madplay
-_install_xspec '!*@(.@(mp?(e)g|MP?(E)G|wm[av]|WM[AV]|avi|AVI|asf|vob|VOB|bin|dat|divx|DIVX|vcd|ps|pes|fli|flv|FLV|fxm|FXM|viv|rm|ram|yuv|mov|MOV|qt|QT|web[am]|WEB[AM]|mp[234]|MP[234]|m?(p)4[av]|M?(P)4[AV]|mkv|MKV|og[agmv]|OG[AGMV]|t[ps]|T[PS]|m2t?(s)|M2T?(S)|mts|MTS|wav|WAV|flac|FLAC|asx|ASX|mng|MNG|srt|m[eo]d|M[EO]D|s[3t]m|S[3T]M|it|IT|xm|XM)|+([0-9]).@(vdr|VDR))?(.part)' xine aaxine fbxine
-_install_xspec '!*@(.@(mp?(e)g|MP?(E)G|wm[av]|WM[AV]|avi|AVI|asf|vob|VOB|bin|dat|divx|DIVX|vcd|ps|pes|fli|flv|FLV|fxm|FXM|viv|rm|ram|yuv|mov|MOV|qt|QT|web[am]|WEB[AM]|mp[234]|MP[234]|m?(p)4[av]|M?(P)4[AV]|mkv|MKV|og[agmv]|OG[AGMV]|t[ps]|T[PS]|m2t?(s)|M2T?(S)|mts|MTS|wav|WAV|flac|FLAC|asx|ASX|mng|MNG|srt|m[eo]d|M[EO]D|s[3t]m|S[3T]M|it|IT|xm|XM|iso|ISO)|+([0-9]).@(vdr|VDR))?(.part)' kaffeine dragon
+_install_xspec '!*@(.@(mp?(e)g|MP?(E)G|wm[av]|WM[AV]|avi|AVI|asf|vob|VOB|bin|dat|divx|DIVX|vcd|ps|pes|fli|flv|FLV|fxm|FXM|viv|rm|ram|yuv|mov|MOV|qt|QT|web[am]|WEB[AM]|mp[234]|MP[234]|m?(p)4[av]|M?(P)4[AV]|mkv|MKV|og[agmv]|OG[AGMV]|t[ps]|T[PS]|m2t?(s)|M2T?(S)|mts|MTS|wav|WAV|flac|FLAC|asx|ASX|mng|MNG|srt|m[eo]d|M[EO]D|s[3t]m|S[3T]M|it|IT|xm|XM)|+([0-9]).@(vdr|VDR))?(.@(crdownload|part))' xine aaxine fbxine
+_install_xspec '!*@(.@(mp?(e)g|MP?(E)G|wm[av]|WM[AV]|avi|AVI|asf|vob|VOB|bin|dat|divx|DIVX|vcd|ps|pes|fli|flv|FLV|fxm|FXM|viv|rm|ram|yuv|mov|MOV|qt|QT|web[am]|WEB[AM]|mp[234]|MP[234]|m?(p)4[av]|M?(P)4[AV]|mkv|MKV|og[agmv]|OG[AGMV]|t[ps]|T[PS]|m2t?(s)|M2T?(S)|mts|MTS|wav|WAV|flac|FLAC|asx|ASX|mng|MNG|srt|m[eo]d|M[EO]D|s[3t]m|S[3T]M|it|IT|xm|XM|iso|ISO)|+([0-9]).@(vdr|VDR))?(.@(crdownload|part))' kaffeine dragon
 _install_xspec '!*.@(avi|asf|wmv)' aviplay
 _install_xspec '!*.@(rm?(j)|ra?(m)|smi?(l))' realplay
 _install_xspec '!*.@(mpg|mpeg|avi|mov|qt)' xanim
@@ -1983,7 +2001,6 @@ _install_xspec '*.@([ao]|so|so.!(conf|*/*)|[rs]pm|gif|jp?(e)g|mp3|mp?(e)g|avi|as
 _install_xspec '!*.@(zip|z|gz|tgz)' bzme
 # konqueror not here on purpose, it's more than a web/html browser
 _install_xspec '!*.@(?([xX]|[sS])[hH][tT][mM]?([lL]))' netscape mozilla lynx galeon dillo elinks amaya epiphany
-_install_xspec '!*.@(?([xX]|[sS])[hH][tT][mM]?([lL])|[pP][dD][fF])' firefox mozilla-firefox iceweasel google-chrome chromium-browser
 _install_xspec '!*.@(sxw|stw|sxg|sgl|doc?([mx])|dot?([mx])|rtf|txt|htm|html|?(f)odt|ott|odm|pdf)' oowriter lowriter
 _install_xspec '!*.@(sxi|sti|pps?(x)|ppt?([mx])|pot?([mx])|?(f)odp|otp)' ooimpress loimpress
 _install_xspec '!*.@(sxc|stc|xls?([bmx])|xlw|xlt?([mx])|[ct]sv|?(f)ods|ots)' oocalc localc
@@ -2018,6 +2035,7 @@ __load_completion()
 {
     local -a dirs=( ${BASH_COMPLETION_USER_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/bash-completion}/completions )
     local OIFS=$IFS IFS=: dir cmd="${1##*/}" compfile
+    [[ -n $cmd ]] || return 1
     for dir in ${XDG_DATA_DIRS:-/usr/local/share:/usr/share}; do
         dirs+=( $dir/bash-completion/completions )
     done
@@ -2030,6 +2048,7 @@ __load_completion()
     fi
 
     for dir in "${dirs[@]}"; do
+        [[ -d "$dir" ]] || continue
         for compfile in "$cmd" "$cmd.bash" "_$cmd"; do
             compfile="$dir/$compfile"
             # Avoid trying to source dirs; https://bugzilla.redhat.com/903540
