@@ -164,7 +164,9 @@ function Register-BashArgumentCompleter {
 # If the command is an alias, this expands it to be the full command
 # name. If it's not an alias, it exits untouched.
 function Expand-Command {
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseOutputTypeCorrectly", "", Justification = "False positive - https://github.com/PowerShell/PSScriptAnalyzer/issues/676")]
   [CmdletBinding()]
+  [OuptutType([System.String])]
   Param(
       [Parameter(Mandatory = $True, Position = 0)]
       [ValidateNotNullOrEmpty()]
