@@ -136,15 +136,16 @@ function Register-BashArgumentCompleter {
   $driveLetter = $bashCompletionScriptPath.Drive.Name.ToLowerInvariant()
   $driveLetterMountPoint = "$mountPath$driveLetter"
   $bashCompletionScript = $bashCompletionScriptPath.Path -Replace '^([A-Z]:)',$driveLetterMountPoint -Replace '\\', '/'
-  Write-Verbose "Bash completions for $Command = $bashCompletionScript"
+  $resolvedCommand = Expand-Command $Command
+  Write-Verbose "Bash completions for $resolvedCommand = $bashCompletionScript"
 
   Write-Verbose "Completion command = &`"$bash`" `"$bashBridgeScript`" `"$bashCompletionScript`" `"<url-encoded-command-line>`""
 
   $block = {
     param($partialWordToComplete, $commandSoFar, $cursorPosition)
-
+    $resolvedCommandSoFar = $commandSoFar -replace "^$Command",$resolvedCommand
     Add-Type -Assembly System.Web
-    $encodedCommand = [System.Web.HttpUtility]::UrlEncode($commandSoFar).Replace('+',"%20")
+    $encodedCommand = [System.Web.HttpUtility]::UrlEncode($resolvedCommandSoFar).Replace('+', "%20")
     $result = (&"$bash" "$bashBridgeScript" "$bashCompletionScript" "$encodedCommand")
 
     # CompletionResult https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.completionresult.-ctor?view=powershellsdk-1.1.0#System_Management_Automation_CompletionResult__ctor_System_String_System_String_System_Management_Automation_CompletionResultType_System_String_
@@ -158,4 +159,39 @@ function Register-BashArgumentCompleter {
   }.GetNewClosure()
 
   Register-ArgumentCompleter -Native -CommandName $Command -ScriptBlock $block
+}
+
+# If the command is an alias, this expands it to be the full command
+# name. If it's not an alias, it exits untouched.
+function Expand-Command {
+  [CmdletBinding()]
+  Param(
+      [Parameter(Mandatory = $True, Position = 0)]
+      [ValidateNotNullOrEmpty()]
+      [string]
+      $Command
+  )
+
+  $alias = Get-Alias -Name $Command -ErrorAction Ignore
+  if (($null -eq $alias) -or ($null -eq $alias.ResolvedCommandName)) {
+    Write-Verbose "$Command is not an alias."
+    return $Command
+  }
+
+  $resolved = $alias.ResolvedCommandName
+  $pathext = $Env:PATHEXT;
+  if($null -eq $pathext) {
+    Write-Verbose "$Command is an alias for $resolved."
+    return $resolved
+  }
+
+  foreach ($ext in $pathext.Split(';')) {
+    if ($resolved.EndsWith($ext, [System.StringComparison]::OrdinalIgnoreCase)) {
+      $resolved = $resolved.Substring(0, $resolved.Length - $ext.Length)
+      break
+    }
+  }
+
+  Write-Verbose "$Command is an alias for $resolved."
+  return $resolved
 }

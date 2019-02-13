@@ -28,7 +28,14 @@ Commands like `kubectl` allow you to export command completion logic for use in 
 2. Run the `Register-BashArgumentCompleter` cmdlet to register the command you're expanding and the location of the completions.
     Example:
     ```PowerShell
-    Register-BashArgumentCompleter "kubectl" C:\completions\kubectl_completions.sh`
+    Register-BashArgumentCompleter "kubectl" C:\completions\kubectl_completions.sh
+    ```
+
+3. If you use PowerShell aliases, register the completer for your aliases as well.
+    Example:
+    ```PowerShell
+    Set-Alias kc kubectl
+    Register-BashArgumentCompleter "kc" C:\completions\kubectl_completions.sh
     ```
 
 # How It Works
