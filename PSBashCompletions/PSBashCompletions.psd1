@@ -22,7 +22,5 @@
       IconUri = ''
     }
   }
-
-  HelpInfoURI = 'https://github.com/tillig/ps-bash-completions'
 }
 
