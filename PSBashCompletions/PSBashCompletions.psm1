@@ -123,7 +123,7 @@ function Register-BashArgumentCompleter {
   # Determine drive letter mount point
   # this assumes you have a drive C and looks for either /mnt/c or just /c to find where it is mounted in bash
   # the resulting string should be either / or /mnt/
-  $mountPath = (&"$bash" -c "mount | grep ^C:\ | cut -f3 -d\ ") -replace "/c","/"
+  $mountPath = (&"$bash" -c "mount | grep -e '^C:\\\\\\?[[:space:]]' | cut -f3 -d\ ") -replace "/c", "/"
 
   Write-Verbose "Starting command completion registration for $Command"
   $bashBridgeScriptPath = Resolve-Path -Path "$PSScriptRoot\bash_completion_bridge.sh"
