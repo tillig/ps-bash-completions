@@ -5,7 +5,7 @@
 # Assumption: Completion is happening at the END of the current command line.
 
 # Bring in the completion script.
-source $1
+source "$1"
 
 # URL decode the command line to evaluate.
 line=$(printf '%b' "${2//%/\\x}")
