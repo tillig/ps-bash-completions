@@ -3,7 +3,7 @@
 
 @{
   RootModule = '.\PSBashCompletions.psm1'
-  ModuleVersion = '1.2.2'
+  ModuleVersion = '1.2.3'
   GUID = '55f0d5a8-c664-43cd-ac46-f4b3d9e97825'
   Author = 'Travis Illig'
   Copyright = '(c) 2018 Travis Illig. All rights reserved.'
