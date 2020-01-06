@@ -6,7 +6,13 @@ Commands like `kubectl` allow you to export command completion logic for use in 
 
 # Installation
 
-**First, make sure you have `bash.exe` in your path or that you have Git for Windows installed.** If `bash.exe` isn't in the path, the version shipping with Git for Windows will be used.
+## Prerequisites for Windows
+
+**Make sure you have `bash.exe` in your path or that you have Git for Windows installed.** If `bash.exe` isn't in the path, the version shipping with Git for Windows will be used.
+
+## Prerequisites for MacOS
+
+**You need a newer bash than the one shipped with MacOS.** If you haven't ever upgraded bash, likely you've still got 3.2 from 2007. Use Homebrew to get a newer version. `brew install bash`
 
 ## From PowerShell Gallery
 
@@ -14,7 +20,7 @@ Commands like `kubectl` allow you to export command completion logic for use in 
 
 ## Manual Install
 
-1. Put the `PSBashCompletions` folder in your PowerShell module folder (e.g., `C:\Users\username\Documents\WindowsPowerShell\Modules`).
+1. Put the `PSBashCompletions` folder in your PowerShell module folder (e.g., `C:\Users\username\Documents\WindowsPowerShell\Modules` or `/Users/username/.local/share/powershell/Modules`.
 2. `Import-Module PSBashCompletions`
 
 # Usage
@@ -63,9 +69,13 @@ There are lots of moving pieces, so if things aren't working there isn't "one an
 
 **First, run `Register-BashArgumentCompleter` with the `-Verbose` flag.** When you do that, you'll get a verbose line that shows the actual `bash.exe` command that will be used to generate completions. You can copy that and run it yourself to see what happens.
 
-The command will look something like this:
+The command will look something like this in Windows:
 
-`&"C:\Program Files\Git\bin\bash.exe" "/c/Users/username/Documents/WindowsPowerShell/Modules/PSBashCompletions/1.0.0/bash_completion_bridge.sh" "/c/completions/kubectl_completions.sh" "<url-encoded-command-line>"`
+`&"C:\Program Files\Git\bin\bash.exe" "/c/Users/username/Documents/WindowsPowerShell/Modules/PSBashCompletions/1.2.2/bash_completion_bridge.sh" "/c/completions/kubectl_completions.sh" "<url-encoded-command-line>"`
+
+On MacOS, it'll look like this:
+
+`&"/usr/local/bin/bash" "/Users/username/.local/share/powershell/Modules/PSBashCompletions/1.2.2/bash_completion_bridge.sh" "/Users/username/.config/powershell/bash-completion/kubectl_completions.sh" "<url-encoded-command-line>"`
 
 The last parameter is what you can play with - it's a URL-encoded version of the whole command line being completed (with `%20` as space, not `+`).
 
@@ -91,10 +101,11 @@ create
 Common things that can go wrong:
 
 - Bash isn't found or the path to bash is wrong.
+- You have an old bash version and need to upgrade.
 - Your completion script isn't found or the path is wrong.
 - Your completion script isn't ASCII with `\n` line endings. UTF-16 doesn't get read as text by Windows `bash`; UTF-8 with a byte-order mark also sometimes causes problems. Even Windows `\r\n` line endings may cause trouble with parsing sometimes. Keeping it ASCII and `\n` is the safest way to ensure compatibility.
 - You have something in your bash profile that's interfering with the completions.
-- You're trying to use a completion that isn't compatible with the Windows version of the command. This happens with `git` completions - you need to use the completion script that comes with Git for Windows, not the Linux version.
+- You're trying to use a completion that isn't compatible with the command on your OS. This happens with `git` completions - for example, on Windows you need to use the completion script that comes with Git for Windows, not the Linux version.
 - The completions rely on other commands or functions that aren't available/loaded. If the completion script isn't self-contained, things won't work. For example, the `kubectl` completions actually call `kubectl` to get resource names in some completions. If bash can't find `kubectl`, the completion won't work.
 
 # Add to Your Profile
