@@ -4,9 +4,9 @@ Bridge to enable bash completions to be run from within PowerShell.
 
 Commands like `kubectl` allow you to export command completion logic for use in bash. As these same commands get ported to Windows and/or used within PowerShell, porting the dynamic completion logic becomes challenging for the project maintainers. This project is an attempt to make a bridge so things "just work."
 
-# Installation
+## Installation
 
-## Prerequisites for Windows
+### Prerequisites for Windows
 
 **Make sure you have `bash.exe` in your path or that you have Git for Windows installed.** If `bash.exe` isn't in the path, the version shipping with Git for Windows will be used.
 
@@ -14,37 +14,43 @@ Commands like `kubectl` allow you to export command completion logic for use in 
 
 **You need a newer bash than the one shipped with MacOS.** If you haven't ever upgraded bash, likely you've still got 3.2 from 2007. Use Homebrew to get a newer version. `brew install bash`
 
-## From PowerShell Gallery
+### From PowerShell Gallery
 
 `Install-Module -Name "PSBashCompletions"`
 
-## Manual Install
+### Manual Install
 
 1. Put the `PSBashCompletions` folder in your PowerShell module folder (e.g., `C:\Users\username\Documents\WindowsPowerShell\Modules` or `/Users/username/.local/share/powershell/Modules`.
 2. `Import-Module PSBashCompletions`
 
-# Usage
+## Usage
 
 1. Locate the completion script for the bash command. You may have to export this like:
-    ```PowerShell
+
+    ```powershell
     ((kubectl completion bash) -join "`n") | Set-Content -Encoding ASCII -NoNewline -Path kubectl_completions.sh
     ```
+
     **Make sure the completion file is ASCII.** Some exports (like `kubectl`) come out as UTF-16 with CRLF line endings. Windows `bash` may see this as a binary file that can't be interpreted which results in no completions happening.  Using `join` and `Set-Content`  ensures the completions script will load in bash.
 
 2. Run the `Register-BashArgumentCompleter` cmdlet to register the command you're expanding and the location of the completions.
+
     Example:
-    ```PowerShell
+
+    ```powershell
     Register-BashArgumentCompleter "kubectl" C:\completions\kubectl_completions.sh
     ```
 
 3. If you use PowerShell aliases, register the completer for your aliases as well.
+
     Example:
-    ```PowerShell
+
+    ```powershell
     Set-Alias kc kubectl
     Register-BashArgumentCompleter "kc" C:\completions\kubectl_completions.sh
     ```
 
-# How It Works
+## How It Works
 
 The idea is to register a PowerShell argument completer that will manually invoke the bash completion mechanism and return the output that bash would have provided. Basically, that means:
 
@@ -55,7 +61,7 @@ The idea is to register a PowerShell argument completer that will manually invok
 
 It won't be quite as fast as if it was all running native but it means you can use provided bash completions instead of having to re-implement in PowerShell.
 
-# Demo Expansions
+## Demo Expansions
 
 In the `Demo` folder there are some expansions to try:
 
@@ -63,7 +69,7 @@ In the `Demo` folder there are some expansions to try:
 - `Register-GitCompleter.ps1` - Expansions for `git`
 - `Register-EchoTestCompleter.ps1` - Simple echo script that shows completion parameters in bash; use `echotest` as the command to complete and whatever else after it to simulate command lines.
 
-# Troubleshooting
+## Troubleshooting
 
 There are lots of moving pieces, so if things aren't working there isn't "one answer" as to why.
 
@@ -85,7 +91,7 @@ Say you're testing `kubectl` completions and want to see what would happen if yo
 
 If it works, you'd see a list like:
 
-```
+```text
 certificate
 cluster-info
 completion
@@ -108,7 +114,7 @@ Common things that can go wrong:
 - You're trying to use a completion that isn't compatible with the command on your OS. This happens with `git` completions - for example, on Windows you need to use the completion script that comes with Git for Windows, not the Linux version.
 - The completions rely on other commands or functions that aren't available/loaded. If the completion script isn't self-contained, things won't work. For example, the `kubectl` completions actually call `kubectl` to get resource names in some completions. If bash can't find `kubectl`, the completion won't work.
 
-# Add to Your Profile
+## Add to Your Profile
 
 After installing the module you can set the completions to be part of your profile. One way to do that:
 
@@ -127,16 +133,18 @@ if ($enableBashCompletions) {
 }
 ```
 
-# Known Issues
+## Known Issues
 
-## Flags Don't Autocomplete
+### Flags Don't Autocomplete
+
 PowerShell doesn't appear to pass _flags_ to custom argument completers. So, say you tried to do this:
 
 `kubectl apply -<TAB>`
 
 Note the `TAB` after the dash `-`. In bash you'd get completions for the flag like `-f` or `--filename`. PowerShell doesn't seem to call a custom argument completer for flags. (If you know how to make that work [let me know!](https://github.com/tillig/ps-bash-completions/issues))
 
-## Recursive Command Calls Don't Work
+### Recursive Command Calls Don't Work
+
 Some completions (like `kubectl`) actually call themselves to generate completions. For example, if you do:
 
 `kubectl get pod -n <TAB>`
