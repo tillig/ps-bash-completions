@@ -24,6 +24,15 @@ if(-not $?) {
 
 Write-Output "Module manifest analysis passed."
 
+$configuration = [PesterConfiguration]::Default
+$configuration.Run.PassThru = $true
+$configuration.Output.Verbosity = "Detailed"
+$result = Invoke-Pester -Configuration $configuration
+if ($result.failedCount -ne 0) {
+  Write-Error "Unit tests failed. See report for details."
+  Exit 1
+}
+
 if(-not [System.String]::IsNullOrWhiteSpace($NugetAPIKey)) {
   Publish-Module -Path ".\PSBashCompletions" -NugetAPIKey $NugetAPIKey -Whatif:(-not $Publish) -Verbose
 }
