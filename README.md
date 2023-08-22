@@ -77,7 +77,7 @@ There are lots of moving pieces, so if things aren't working there isn't "one an
 
 The command will look something like this in Windows:
 
-`&"C:\Program Files\Git\bin\bash.exe" "/c/Users/username/Documents/WindowsPowerShell/Modules/PSBashCompletions/1.2.2/bash_completion_bridge.sh" "/c/completions/kubectl_completions.sh" "<url-encoded-command-line>"`
+`&"C:\Windows\system32\bash.exe" "/c/Users/username/Documents/WindowsPowerShell/Modules/PSBashCompletions/1.2.2/bash_completion_bridge.sh" "/c/completions/kubectl_completions.sh" "<url-encoded-command-line>"`
 
 On MacOS, it'll look like this:
 
@@ -87,7 +87,7 @@ The last parameter is what you can play with - it's a URL-encoded version of the
 
 Say you're testing `kubectl` completions and want to see what would happen if you hit TAB after `kubectl c`. You'd run:
 
-`&"C:\Program Files\Git\bin\bash.exe" "/c/Users/username/Documents/WindowsPowerShell/Modules/PSBashCompletions/1.0.0/bash_completion_bridge.sh" "/c/completions/kubectl_completions.sh" "kubectl%20c"`
+`&"C:\Windows\system32\bash.exe" "/c/Users/username/Documents/WindowsPowerShell/Modules/PSBashCompletions/1.0.0/bash_completion_bridge.sh" "/c/completions/kubectl_completions.sh" "kubectl%20c"`
 
 If it works, you'd see a list like:
 
@@ -113,6 +113,7 @@ Common things that can go wrong:
 - You have something in your bash profile that's interfering with the completions.
 - You're trying to use a completion that isn't compatible with the command on your OS. This happens with `git` completions - for example, on Windows you need to use the completion script that comes with Git for Windows, not the Linux version.
 - The completions rely on other commands or functions that aren't available/loaded. If the completion script isn't self-contained, things won't work. For example, the `kubectl` completions actually call `kubectl` to get resource names in some completions. If bash can't find `kubectl`, the completion won't work.
+- The default Windows Subsystem for Linux (WSL) distro is non-standard. See the "Known Issues" section below for details on this.
 
 ## Add to Your Profile
 
@@ -156,3 +157,34 @@ Some completions (like `kubectl`) actually call themselves to generate completio
 ...or it may do nothing at all. If you run the troubleshooting command line, you may see an error message, possibly something cryptic like `compopt: not currently executing completion function`.
 
 This happens because we're not _actually in bash doing the completion_, we're manually invoking the completion and the fake-out isn't deep enough. I don't know how to fix that, since `kubectl` or whatever might not actually be installed in bash for you - it may be a Windows/PowerShell thing. Even if it was, getting all the levels working is beyond my ken. (If you know how to make that work [let me know!](https://github.com/tillig/ps-bash-completions/issues))
+
+### Non-Standard WSL Distro
+
+On running `Register-BashArgumentCompleter` in Windows you may see messages that look like this:
+
+> `An error occurred mounting one of your file systems. Please run 'dmesg' for more details.`
+
+or like this:
+
+```text
+<3>WSL (11) ERROR: CreateProcessEntryCommon:370: getpwuid(0) failed 2
+<3>WSL (11) ERROR: CreateProcessEntryCommon:374: getpwuid(0) failed 2
+<3>WSL (11) ERROR: CreateProcessEntryCommon:577: execvpe /bin/sh failed 2
+<3>WSL (11) ERROR: CreateProcessEntryCommon:586: Create process not expected to return
+```
+
+This is typically because the default distro is somewhat non-standard, likely the Docker distro. You can check this by running `wsl -l` to list the distros you have installed.
+
+Most likely you'll see something like this:
+
+```text
+PS> wsl -l
+Windows Subsystem for Linux Distributions:
+docker-desktop-data (Default)
+Ubuntu
+docker-desktop
+```
+
+You need to change the default distro to be something standard like `Ubuntu` so that the `bash` command works: `wsl -s Ubuntu`
+
+[For more information, check out this issue thread.](https://github.com/microsoft/WSL/issues/5923)
