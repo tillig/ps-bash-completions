@@ -6,7 +6,7 @@ Param(
   $Publish = $False
 )
 
-
+Import-Module Pester
 Import-Module PSScriptAnalyzer -Force
 
 $results = Invoke-ScriptAnalyzer -Path .\PSBashCompletions\PSBashCompletions.psm1
