@@ -12,6 +12,7 @@
   # where it is mounted in bash. The resulting string should be either / or
   # /mnt/
   $found = $MountData | Where-Object { $_ -match "C:" -and $_ -match "(/mnt)?/c" }
+  $found = $found | Where-Object { $_ -match "(/mnt)?/c" } 
   If ($found) {
     # We found /mnt/c or /c
     $Matches[0] -replace "/c", "/"
