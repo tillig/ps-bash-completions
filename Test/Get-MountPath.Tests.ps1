@@ -67,7 +67,7 @@ Describe "Get-MountPath" {
     )
     Get-MountPath $mount | Should -Be "/"
   }
-  It "gets the mount path when docker is installed on Windows" {
+  It "gets the mount path when Docker is installed on Windows" {
     $mount = @(
       'none on /mnt/wsl type tmpfs (rw,relatime)',
       '/dev/sdd on /mnt/wsl/docker-desktop-data/isocache type ext4 (rw,relatime,discard,errors=remount-ro,data=ordered)',
