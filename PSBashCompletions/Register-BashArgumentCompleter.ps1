@@ -121,7 +121,12 @@ function Register-BashArgumentCompleter {
   }
 
   Write-Verbose "bash = $bash"
-  $mountData = &"$Bash" -c "mount"
+  $mountData = &"$bash" -c "mount"
+  if (($LASTEXITCODE -ne 0) -or (-not $mountData)) {
+    Write-Error "Unable to get mount data from bash."
+    Exit 1
+  }
+
   $mountPath = Get-MountPath $mountData
 
   Write-Verbose "Starting command completion registration for $Command"
