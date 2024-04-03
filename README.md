@@ -27,28 +27,28 @@ Commands like `kubectl` allow you to export command completion logic for use in 
 
 1. Locate the completion script for the bash command. You may have to export this like:
 
-    ```powershell
-    ((kubectl completion bash) -join "`n") | Set-Content -Encoding ASCII -NoNewline -Path kubectl_completions.sh
-    ```
+   ```powershell
+   ((kubectl completion bash) -join "`n") | Set-Content -Encoding ASCII -NoNewline -Path kubectl_completions.sh
+   ```
 
-    **Make sure the completion file is ASCII.** Some exports (like `kubectl`) come out as UTF-16 with CRLF line endings. Windows `bash` may see this as a binary file that can't be interpreted which results in no completions happening.  Using `join` and `Set-Content`  ensures the completions script will load in bash.
+   **Make sure the completion file is ASCII.** Some exports (like `kubectl`) come out as UTF-16 with CRLF line endings. Windows `bash` may see this as a binary file that can't be interpreted which results in no completions happening. Using `join` and `Set-Content` ensures the completions script will load in bash.
 
 2. Run the `Register-BashArgumentCompleter` cmdlet to register the command you're expanding and the location of the completions.
 
-    Example:
+   Example:
 
-    ```powershell
-    Register-BashArgumentCompleter "kubectl" C:\completions\kubectl_completions.sh
-    ```
+   ```powershell
+   Register-BashArgumentCompleter "kubectl" C:\completions\kubectl_completions.sh
+   ```
 
 3. If you use PowerShell aliases, register the completer for your aliases as well.
 
-    Example:
+   Example:
 
-    ```powershell
-    Set-Alias kc kubectl
-    Register-BashArgumentCompleter "kc" C:\completions\kubectl_completions.sh
-    ```
+   ```powershell
+   Set-Alias kc kubectl
+   Register-BashArgumentCompleter "kc" C:\completions\kubectl_completions.sh
+   ```
 
 ## How It Works
 

@@ -1,15 +1,21 @@
 ﻿root = true
 
+; Default
 [*]
-end_of_line = CRLF
 indent_style = space
-indent_size = 2
-insert_final_newline = true
 trim_trailing_whitespace = true
+insert_final_newline = true
 
-[*.md]
+; Markdown - match markdownlint settings
+[*.{md,markdown}]
+indent_size = 2
+
+; PowerShell - match defaults for New-ModuleManifest and PSScriptAnalyzer Invoke-Formatter
+[*.{ps1,psd1,psm1}]
 indent_size = 4
+charset = utf-8-bom
 
+; Linux shell - match common examples, require LF to ensure local interpretation works
 [*.sh]
-indent_size = 4
 end_of_line = LF
+indent_size = 2

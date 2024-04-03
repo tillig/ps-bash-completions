@@ -6,5 +6,9 @@
     "echotest",
     "execvpe",
     "getpwuid"
-  ]
+  ],
+  "powershell.codeFormatting.pipelineIndentationStyle": "IncreaseIndentationForFirstPipeline",
+  "powershell.pester.outputVerbosity": "Detailed",
+  "powershell.scriptAnalysis.enable": true,
+  "powershell.scriptAnalysis.settingsPath": "PSScriptAnalyzerSettings.psd1"
 }
